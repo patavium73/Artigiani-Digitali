@@ -1,0 +1,6 @@
+{
+  "name": "Calcolatore Prezzi Artigiani Digitali",
+  "description": "Strumento analitico e calcolatore di prezzi e margini per Stampa 3D, incisioni laser, CNC e artigiani digitali, conforme al manuale utente ufficiale con archivio preventivi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
