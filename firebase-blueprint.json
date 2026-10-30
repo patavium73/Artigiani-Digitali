@@ -1,0 +1,145 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with subscription tier and workshop metadata",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "subscriptionTier": { "type": "string", "enum": ["free", "pro", "team"] },
+        "subscriptionStatus": { "type": "string", "enum": ["active", "trialing", "canceled", "past_due"] },
+        "stripeCustomerId": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "subscriptionTier"]
+    },
+    "WorkshopSettings": {
+      "title": "WorkshopSettings",
+      "description": "Workshop fiscal, artisan, and operational settings",
+      "type": "object",
+      "properties": {
+        "workshopName": { "type": "string" },
+        "artisanName": { "type": "string" },
+        "tagline": { "type": "string" },
+        "vatNumber": { "type": "string" },
+        "fiscalCode": { "type": "string" },
+        "sdiCode": { "type": "string" },
+        "pec": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "website": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "zipCode": { "type": "string" },
+        "province": { "type": "string" },
+        "iban": { "type": "string" },
+        "bankName": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "termsAndConditions": { "type": "string" },
+        "invoiceNotes": { "type": "string" }
+      },
+      "required": ["workshopName", "vatNumber"]
+    },
+    "Material": {
+      "title": "Material",
+      "description": "Raw material in stock",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "cost": { "type": "number" },
+        "quantity": { "type": "number" },
+        "unit": { "type": "string" },
+        "costPerUnit": { "type": "number" },
+        "stockAlertThreshold": { "type": "number" }
+      },
+      "required": ["id", "name", "cost", "quantity", "unit"]
+    },
+    "Machine": {
+      "title": "Machine",
+      "description": "Workshop machine or equipment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "technology": { "type": "string" },
+        "machineCostEur": { "type": "number" },
+        "estimatedLifeHours": { "type": "number" },
+        "consumptionWatts": { "type": "number" }
+      },
+      "required": ["id", "name", "technology"]
+    },
+    "Recipe": {
+      "title": "Recipe",
+      "description": "Product recipe or fabrication preset",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "technology": { "type": "string" },
+        "sellingPrice": { "type": "number" }
+      },
+      "required": ["id", "name", "technology", "sellingPrice"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer order or quote",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "title": { "type": "string" },
+        "status": { "type": "string" },
+        "totalRevenue": { "type": "number" },
+        "totalCost": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "code", "title", "status"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Customer directory item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" }
+      },
+      "required": ["name"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile document"
+    },
+    "/users/{userId}/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/WorkshopSettings" },
+      "description": "User workshop settings document"
+    },
+    "/users/{userId}/materials/{materialId}": {
+      "schema": { "$ref": "#/entities/Material" },
+      "description": "User materials in inventory"
+    },
+    "/users/{userId}/machines/{machineId}": {
+      "schema": { "$ref": "#/entities/Machine" },
+      "description": "User machines"
+    },
+    "/users/{userId}/recipes/{recipeId}": {
+      "schema": { "$ref": "#/entities/Recipe" },
+      "description": "User recipes"
+    },
+    "/users/{userId}/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "User orders and quotes"
+    },
+    "/users/{userId}/clients/{clientId}": {
+      "schema": { "$ref": "#/entities/Client" },
+      "description": "User customer contacts"
+    }
+  }
+}

@@ -54,11 +54,22 @@ import { MarketplaceSimulatorModal } from './components/MarketplaceSimulatorModa
 import { PrintableQuoteModal } from './components/PrintableQuoteModal';
 import { MonthlyProfitAnalytics } from './components/MonthlyProfitAnalytics';
 import { SettingsView, SettingsSubTab } from './components/SettingsView';
+import { SubscriptionLandingPage } from './components/SubscriptionLandingPage';
+import { AuthModal } from './components/AuthModal';
+import { useAuth } from './contexts/AuthContext';
 import { Check } from 'lucide-react';
 
 export default function App() {
+  const { user, subscription } = useAuth();
   const [activeTab, setActiveTab] = useState<NavTab>('recipes');
   const [settingsSubTab, setSettingsSubTab] = useState<SettingsSubTab>('tariffe');
+  const [isLandingPageOpen, setIsLandingPageOpen] = useState<boolean>(() => {
+    // La prima pagina per i visitatori è la landing page
+    return !sessionStorage.getItem('gestionale_session_active');
+  });
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  const [hasDismissedFreeBanner, setHasDismissedFreeBanner] = useState(false);
 
   // Dati persistenti
   const [materials, setMaterials] = useState<MaterialItem[]>([]);
@@ -113,6 +124,14 @@ export default function App() {
     setSettings(getWorkshopSettings());
   }, []);
 
+  // Se l'utente esegue l'accesso, entra direttamente nel gestionale
+  useEffect(() => {
+    if (user) {
+      setIsLandingPageOpen(false);
+      sessionStorage.setItem('gestionale_session_active', 'true');
+    }
+  }, [user]);
+
   // --- HANDLER MATERIALI & MAGAZZINO ---
   const handleOpenAddMaterial = () => {
     setEditingMaterial(null);
@@ -146,6 +165,17 @@ export default function App() {
 
   // --- HANDLER PARCO MACCHINE ---
   const handleOpenAddMachine = () => {
+    // Controllo limiti di macchine in base al piano
+    if (subscription.tier === 'free' && machines.length >= 2) {
+      showToast('Limite 2 macchine raggiunto per il piano Free. Passa ad Artigiano Pro per sbloccare fino a 5 macchine!');
+      setIsLandingPageOpen(true);
+      return;
+    }
+    if (subscription.tier === 'pro' && machines.length >= 5) {
+      showToast('Limite 5 macchine raggiunto per Artigiano Pro. Passa al piano Team per macchine illimitate!');
+      setIsLandingPageOpen(true);
+      return;
+    }
     setEditingMachine(null);
     setIsMachineModalOpen(true);
   };
@@ -309,8 +339,62 @@ export default function App() {
     ? recipes.find((r) => r.id === orderForJobSheet.recipeId)
     : undefined;
 
+  if (isLandingPageOpen) {
+    return (
+      <>
+        <SubscriptionLandingPage
+          onBackToApp={() => {
+            setIsLandingPageOpen(false);
+            sessionStorage.setItem('gestionale_session_active', 'true');
+          }}
+          onOpenAuth={(mode = 'login') => {
+            setAuthModalMode(mode);
+            setIsAuthModalOpen(true);
+          }}
+        />
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          initialMode={authModalMode}
+          onClose={() => setIsAuthModalOpen(false)}
+        />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900 text-sm md:text-base">
+      {/* Banner Promozionale Pro per Accesso Libero / Starter Free */}
+      {!hasDismissedFreeBanner && subscription.tier === 'free' && (
+        <aside aria-label="Notifica Piano Starter Free" className="bg-[#0b101c] border-b border-orange-500/30 text-slate-200 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs shadow-sm no-print">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shrink-0"></span>
+            <span className="font-bold text-white uppercase font-mono tracking-wider text-2xs bg-orange-500/20 px-2 py-0.5 rounded border border-orange-500/30 text-orange-400">
+              MODALITÀ STARTER FREE
+            </span>
+            <span className="text-slate-300">
+              Stai esplorando il gestionale libero (max 2 macchine). Sblocca fino a 5 macchine, preventivi e fatture PDF con <strong>Artigiano Pro</strong>!
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsLandingPageOpen(true)}
+              className="px-3 py-1 rounded-md bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-black text-2xs transition-all shadow-sm cursor-pointer"
+            >
+              Passa ad Artigiano Pro →
+            </button>
+            <button
+              type="button"
+              onClick={() => setHasDismissedFreeBanner(true)}
+              className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 transition-colors cursor-pointer text-xs"
+              title="Nascondi per questa sessione"
+            >
+              ✕
+            </button>
+          </div>
+        </aside>
+      )}
+
       {/* Header Principale con Icone Colorate */}
       <Header
         activeTab={activeTab}
@@ -319,6 +403,8 @@ export default function App() {
         onOpenNewMaterial={handleOpenAddMaterial}
         onOpenNewOrder={handleOpenAddOrder}
         onOpenNewMachine={handleOpenAddMachine}
+        onOpenLanding={() => setIsLandingPageOpen(true)}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
         materialsCount={materials.length}
         recipesCount={recipes.length}
         ordersCount={orders.length}
@@ -505,6 +591,13 @@ export default function App() {
           onClose={() => setIsPrintModalOpen(false)}
         />
       )}
+
+      {/* Modale Autenticazione & Cloud Firebase */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        initialMode={authModalMode}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
 
       {/* Toast Feedback */}
       {toastMessage && (

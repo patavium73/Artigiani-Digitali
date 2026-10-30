@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BookOpen,
   Box,
@@ -12,10 +12,26 @@ import {
   Settings,
   Plus,
   Cpu,
-  TrendingUp,
+  Cloud,
+  Sparkles,
+  Download,
+  CreditCard,
+  LogIn,
+  LogOut,
+  User,
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { InstallGuideModal } from './InstallGuideModal';
 
-export type NavTab = 'recipes' | 'materials' | 'machines' | 'orders' | 'clients' | 'settings' | 'analytics' | 'fixedCosts';
+export type NavTab =
+  | 'recipes'
+  | 'materials'
+  | 'machines'
+  | 'orders'
+  | 'clients'
+  | 'settings'
+  | 'analytics'
+  | 'fixedCosts';
 
 interface HeaderProps {
   activeTab: NavTab;
@@ -24,6 +40,8 @@ interface HeaderProps {
   onOpenNewMaterial: () => void;
   onOpenNewOrder: () => void;
   onOpenNewMachine: () => void;
+  onOpenLanding: () => void;
+  onOpenAuth: () => void;
   materialsCount: number;
   recipesCount: number;
   ordersCount: number;
@@ -37,30 +55,72 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenNewMaterial,
   onOpenNewOrder,
   onOpenNewMachine,
+  onOpenLanding,
+  onOpenAuth,
   materialsCount,
   recipesCount,
   ordersCount,
   machinesCount,
 }) => {
+  const { user, subscription, isCloudSynced, logout } = useAuth();
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+    } else {
+      setIsInstallModalOpen(true);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-xs no-print">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-4 h-18">
-          {/* Logo Brand Artigiani Digitali */}
+        <div className="flex items-center justify-between gap-3 h-18">
+          
+          {/* Logo Brand OfficinaCalc 3D */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-purple-600 text-white flex items-center justify-center font-black text-base shadow-xs">
-              AD
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-900 via-slate-800 to-orange-600 text-white flex items-center justify-center font-black text-base shadow-xs border border-orange-500/20">
+              <Cpu className="w-5 h-5 text-orange-400" />
             </div>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                setActiveTab('recipes');
-              }}
-              className="text-lg font-black tracking-tight text-slate-950 whitespace-nowrap shrink-0 hover:text-blue-700 transition-colors"
-            >
-              Artigiani Digitali
-            </a>
+            <div>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveTab('recipes');
+                }}
+                className="text-lg font-black tracking-tight text-slate-950 whitespace-nowrap shrink-0 hover:text-orange-600 transition-colors block"
+              >
+                OFFICINA<span className="text-orange-600">CALC</span> 3D
+              </a>
+              <div className="flex items-center gap-2">
+                <span className="text-3xs font-mono font-bold uppercase tracking-wider px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+                  SaaS PWA
+                </span>
+                <span className="text-3xs text-orange-600 font-bold uppercase tracking-wider font-mono">
+                  {subscription.tier === 'pro'
+                    ? 'PRO (5 MACCHINE)'
+                    : subscription.tier === 'team'
+                    ? 'TEAM (ILLIMITATO)'
+                    : 'STARTER FREE'}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Navigazione Principale con Icone Colorate */}
@@ -150,12 +210,72 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </nav>
 
-          {/* Azione Rapida Primaria */}
+          {/* Azioni Rapide SaaS: PWA Install, Cloud Sync, Piani & Nuovo Ordine */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Tasto Installa PWA */}
+            <button
+              type="button"
+              onClick={handleInstallClick}
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+              title="Installa Artigiani Digitali come applicazione su Windows o Android"
+            >
+              <Download className="w-3.5 h-3.5 text-teal-600" />
+              <span>Installa App</span>
+            </button>
+
+            {/* Se loggato: mostra profilo e Logoff. Se non loggato: mostra Login e Piani & Prezzi */}
+            {user ? (
+              <>
+                <button
+                  type="button"
+                  onClick={onOpenAuth}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-teal-50 border border-teal-200 text-teal-900 hover:bg-teal-100 transition-colors cursor-pointer max-w-[160px]"
+                  title="Visualizza dettagli account"
+                >
+                  <User className="w-3.5 h-3.5 text-teal-700 shrink-0" />
+                  <span className="truncate hidden sm:inline">{user.displayName || user.email || 'Artigiano'}</span>
+                  <span className="sm:hidden">Profilo</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer"
+                  title="Disconnetti account"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-red-600" />
+                  <span>Logoff</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={onOpenAuth}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-all cursor-pointer"
+                  title="Accedi o crea un account"
+                >
+                  <LogIn className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Login</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onOpenLanding}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg transition-colors cursor-pointer"
+                  title="Visualizza i piani abbonamento SaaS"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  <span className="hidden sm:inline">Piani & Prezzi</span>
+                </button>
+              </>
+            )}
+
+            {/* Tasto Primario Nuovo Ordine */}
             <button
               type="button"
               onClick={onOpenNewOrder}
-              className="flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-all whitespace-nowrap shrink-0 shadow-xs cursor-pointer"
+              className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-all whitespace-nowrap shrink-0 shadow-xs cursor-pointer"
             >
               <Plus className="w-4 h-4 text-teal-400" />
               <span>Nuovo Ordine</span>
@@ -217,7 +337,52 @@ export const Header: React.FC<HeaderProps> = ({
           <Settings className="w-3.5 h-3.5 text-purple-700" />
           <span>Impostazioni</span>
         </button>
+
+        <button
+          onClick={handleInstallClick}
+          className="px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 bg-teal-100 text-teal-900 font-bold flex items-center gap-1 cursor-pointer"
+        >
+          <Download className="w-3 h-3 text-teal-700" />
+          <span>Installa App</span>
+        </button>
+
+        {user ? (
+          <button
+            onClick={logout}
+            className="px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 bg-red-100 text-red-900 font-bold flex items-center gap-1 cursor-pointer"
+            title="Disconnetti account"
+          >
+            <LogOut className="w-3 h-3 text-red-700" />
+            <span>Logoff</span>
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={onOpenAuth}
+              className="px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 bg-slate-100 text-slate-800 font-bold flex items-center gap-1 cursor-pointer"
+            >
+              <LogIn className="w-3 h-3 text-teal-700" />
+              <span>Login</span>
+            </button>
+
+            <button
+              onClick={onOpenLanding}
+              className="px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 bg-amber-100 text-amber-900 font-bold flex items-center gap-1 cursor-pointer"
+            >
+              <Sparkles className="w-3 h-3 text-amber-600" />
+              <span>Abbonamento</span>
+            </button>
+          </>
+        )}
       </div>
+
+      {/* Modale Guida Installazione PWA */}
+      <InstallGuideModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+        onTriggerInstallPrompt={() => deferredPrompt?.prompt()}
+        hasNativePrompt={!!deferredPrompt}
+      />
     </header>
   );
 };
